@@ -1,6 +1,9 @@
 include .env
 export OPENAI_API_KEY := $(OPENAI_API_KEY)
 
+streaming:
+	uv run python -m src.streaming
+
 agent:
 	uv run python -i -m src.agents
 
