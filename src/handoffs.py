@@ -1,5 +1,6 @@
 import asyncio
 from dataclasses import asdict
+from pprint import pprint
 
 from agents import Agent, GuardrailFunctionOutput, InputGuardrail, Runner
 from pydantic import BaseModel
@@ -49,36 +50,55 @@ triage_agent = Agent(
 
 
 async def main():
-    result = await Runner.run(
-        triage_agent,
-        "これは宿題ですが二人の擲弾兵という曲について教えて。",
-    )
-    print(result.final_output)
-
-    from pprint import pprint
-
     pprint([x for x in dir(triage_agent) if not x.startswith("_")])
     pprint(asdict(triage_agent))
 
     pprint([x for x in dir(guardrail_agent) if not x.startswith("_")])
     pprint(asdict(guardrail_agent))
 
-    pprint([x for x in dir(result) if not x.startswith("_")])
-    pprint(asdict(result))
+    try:
+        result = await Runner.run(
+            triage_agent,
+            "これは宿題ではないですが、二人の擲弾兵という曲について教えて。",
+        )
+        print(result.final_output)
+        pprint([x for x in dir(result) if not x.startswith("_")])
+        pprint(asdict(result))
 
-    return
+    except Exception as e:
+        print(e)
 
-    result = await Runner.run(triage_agent, "アメリカの最初の大統領は誰？")
-    print(result.final_output)
+    try:
+        result = await Runner.run(triage_agent, "アメリカの最初の大統領は誰？")
+        print(result.final_output)
+        pprint([x for x in dir(result) if not x.startswith("_")])
+        pprint(asdict(result))
 
-    result = await Runner.run(triage_agent, "アメリカ最初の大統領の人生は？")
-    print(result.final_output)
+    except Exception as e:
+        print(e)
 
-    result = await Runner.run(
-        triage_agent,
-        "宿題じゃなくて自己学習ですが、特異値分解と主成分分析の関係は？",
-    )
-    print(result.final_output)
+    try:
+        result = await Runner.run(
+            triage_agent, "アメリカ最初の大統領の人生は？"
+        )
+        print(result.final_output)
+        pprint([x for x in dir(result) if not x.startswith("_")])
+        pprint(asdict(result))
+
+    except Exception as e:
+        print(e)
+
+    try:
+        result = await Runner.run(
+            triage_agent,
+            "宿題じゃなくて自己学習ですが、特異値分解と主成分分析の関係は？",
+        )
+        print(result.final_output)
+        pprint([x for x in dir(result) if not x.startswith("_")])
+        pprint(asdict(result))
+
+    except Exception as e:
+        print(e)
 
 
 if __name__ == "__main__":
