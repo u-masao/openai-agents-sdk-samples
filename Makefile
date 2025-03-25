@@ -1,6 +1,15 @@
 include .env
 export OPENAI_API_KEY := $(OPENAI_API_KEY)
 
+dynamic_system_prompt:
+	uv run python -m src.dynamic_system_prompt
+
+lifecycle_example:
+	uv run python -m src.lifecycle_example
+
+discussion_three:
+	uv run python -m src.discussion_three
+
 tools_websearch:
 	uv run python -m src.tools_websearch
 
