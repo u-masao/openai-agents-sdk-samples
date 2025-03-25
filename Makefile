@@ -1,8 +1,14 @@
 include .env
 export OPENAI_API_KEY := $(OPENAI_API_KEY)
 
+tools_websearch:
+	uv run python -m src.tools_websearch
+
 streaming:
 	uv run python -m src.streaming
+
+tools_agents:
+	uv run python -m src.tools_agents_as_tools
 
 tools_custom:
 	uv run python -m src.tools_custom

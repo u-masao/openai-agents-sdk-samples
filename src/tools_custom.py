@@ -1,55 +1,29 @@
-import json
 from pprint import pprint
+from typing import Any
 
-from agents import Agent, FunctionTool, RunContextWrapper, function_tool
-from typing_extensions import Any, TypedDict
-
-
-class Location(TypedDict):
-    lat: float
-    long: float
+from agents import FunctionTool, RunContextWrapper
+from pydantic import BaseModel
 
 
-@function_tool
-async def fetch_weather(location: Location) -> str:
-    """与えられたロケーションの天気を取得
-
-    Args:
-        location: 天気を取得したいロケーション
-    """
-    # 外部 API などで外部の天気を取得したつもり
-    weather = "濃霧"
-    return weather
+def do_some_work(data: str) -> str:
+    return "完了"
 
 
-@function_tool(name_override="fetch_data")
-def read_file(
-    ctx: RunContextWrapper[Any], path: str, directory: str | None = None
-) -> str:
-    """ファイルの中身を読む
-
-    Args:
-        path: ファイル名
-        directory: ファイルのディレクトリ名
-    """
-    # 例えばこんな感じでファイルを読んだつもり
-    # import json
-    # from pathlib import Path
-    # contents = json.load(open(Path(directory) / path, "r"))
-    contents = """{"diary": "今日は豚肉と野菜で炒めものを作ったよ"}"""
-    return contents
+class FunctionArgs(BaseModel):
+    username: str
+    age: int
 
 
-agent = Agent(
-    name="アシスタント",
-    tools=[fetch_weather, read_file],
+async def run_function(ctx: RunContextWrapper[Any], args: str) -> str:
+    parsed = FunctionArgs.model_validate_json(args)
+    return do_some_work(data=f"{parsed.username} は {parsed.age} 歳です。")
+
+
+tool = FunctionTool(
+    name="処理する担当者",
+    description="抽出されたユーザーを処理します",
+    params_json_schema=FunctionArgs.model_json_schema(),
+    on_invoke_tool=run_function,
 )
 
-for tool in agent.tools:
-    if isinstance(tool, FunctionTool):
-        print(f"## tool name: {tool.name}")
-        pprint(tool)
-        print(
-            json.dumps(tool.params_json_schema, indent=2, ensure_ascii=False)
-        )
-        print()
+pprint(tool)
