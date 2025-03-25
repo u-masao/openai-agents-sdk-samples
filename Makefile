@@ -1,6 +1,9 @@
 include .env
 export OPENAI_API_KEY := $(OPENAI_API_KEY)
 
+customer_service:
+	uv run python -m src.customer_service
+
 dynamic_system_prompt:
 	uv run python -m src.dynamic_system_prompt
 
