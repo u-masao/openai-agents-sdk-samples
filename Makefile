@@ -4,6 +4,9 @@ export OPENAI_API_KEY := $(OPENAI_API_KEY)
 streaming:
 	uv run python -m src.streaming
 
+tools_custom:
+	uv run python -m src.tools_custom
+
 tools:
 	uv run python -m src.tools
 
