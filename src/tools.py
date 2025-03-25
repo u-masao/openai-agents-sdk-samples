@@ -1,8 +1,9 @@
 import datetime
 
 import mlflow
-from agents import Agent, Runner, function_tool
+from agents import Agent, Runner, WebSearchTool, function_tool
 
+mlflow.set_experiment("tools")
 mlflow.openai.autolog()
 
 
@@ -19,9 +20,15 @@ def get_datetime(city: str) -> str:
 agent = Agent(
     name="俳句エージェント",
     instructions="常に俳句で応答してね",
-    model="o3-mini",
-    tools=[get_weather, get_datetime],
+    # model="o3-mini",
+    tools=[get_weather, get_datetime, WebSearchTool()],
 )
+
+result = Runner.run_sync(agent, "今月の秋月電子の定番キットは？")
+print(result.final_output + "\n")
+
+result = Runner.run_sync(agent, "今年の5月に開催されるビッグイベントは？")
+print(result.final_output + "\n")
 
 result = Runner.run_sync(agent, "沖縄の天気知ってる？")
 print(result.final_output + "\n")
