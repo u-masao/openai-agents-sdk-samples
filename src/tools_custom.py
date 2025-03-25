@@ -47,7 +47,7 @@ agent = Agent(
 
 for tool in agent.tools:
     if isinstance(tool, FunctionTool):
-        print(tool.name)
+        print(f"## tool name: {tool.name}")
         pprint(tool)
         print(
             json.dumps(tool.params_json_schema, indent=2, ensure_ascii=False)
