@@ -1,5 +1,9 @@
 include .env
 export OPENAI_API_KEY := $(OPENAI_API_KEY)
+export OPENAI_AGENTS_DISABLE_TRACING := $(OPENAI_AGENTS_DISABLE_TRACING)
+
+mlflow_trace:
+	uv run python -i -m src.mlflow_trace
 
 customer_service:
 	uv run python -m src.customer_service
