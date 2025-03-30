@@ -39,6 +39,6 @@ handoff:
 	uv run python -m src.handoffs
 
 lint:
-	uv run isort src
-	uv run black src -l 79
-	uv run flake8 src
+	uv run isort src --skip src/examples/
+	uv run black src -l 79 --exclude 'src/examples/.*'
+	uv run flake8 src --exclude 'src/examples/'
