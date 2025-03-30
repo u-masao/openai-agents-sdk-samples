@@ -1,6 +1,5 @@
 import asyncio
 import functools
-import threading
 from dataclasses import dataclass, field
 from typing import Any, Literal, Optional
 
@@ -56,16 +55,13 @@ class HumanInteractManager:
         """人間からシステムへメッセージを送る"""
         self.context.human_to_system_message = message
         self.context.status = "human_responded"
-        print(
-            f"send_human_to_system thread: {threading.current_thread().ident}"
-        )
         if self._loop and self._loop.is_running():
             print("Calling event.set() via loop.call_soon_threadsafe")
             self._loop.call_soon_threadsafe(self.context.event.set)
         else:
             print("Warinng: Main event loop not available or not running")
 
-        print("event.set()")
+        print("event.set() to release event.wait()")
         self.context.event.set()
 
     def receive_human_to_system(self) -> str:
@@ -77,7 +73,6 @@ class HumanInteractManager:
         if self.context is None:
             return
         self.context.system_to_human_message = None
-        # self.context.system_to_human_prompt = None
         self.context.human_to_system_message = None
         self.context.status = "idle"
         self.context.event.clear()
@@ -99,7 +94,6 @@ async def ask_to_human(run_ctx: RunContextWrapper[Any], question: str) -> str:
         question: システムから人間への質問の文字列
     """
     print("ask_to_human called")
-    print(f"ask_to_human called in thread: {threading.current_thread().ident}")
 
     interact_manager: HumanInteractManager = run_ctx.context
 
@@ -226,7 +220,6 @@ async def main():
     print("run gradio background")
     loop = asyncio.get_running_loop()
     interact_manager.set_loop(loop)
-    print(f"main running thread: {threading.current_thread().ident}")
 
     # Gradio の起動関数をおまとめ
     launch_func = functools.partial(demo.launch, share=False)
