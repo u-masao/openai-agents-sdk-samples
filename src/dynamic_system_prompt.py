@@ -1,5 +1,6 @@
 import asyncio
 import random
+from pprint import pprint
 from typing import Literal
 
 from agents import Agent, RunContextWrapper, Runner
@@ -14,6 +15,7 @@ def custom_instructions(
     run_context: RunContextWrapper[CustomContext], agent: Agent[CustomContext]
 ) -> str:
     context = run_context.context
+    pprint(run_context)
     if context.style == "俳句":
         return "俳句のみをレスポンスして"
     elif context.style == "海賊":
