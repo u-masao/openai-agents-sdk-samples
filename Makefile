@@ -2,6 +2,9 @@ include .env
 export OPENAI_API_KEY := $(OPENAI_API_KEY)
 export OPENAI_AGENTS_DISABLE_TRACING := $(OPENAI_AGENTS_DISABLE_TRACING)
 
+tools_human:
+	uv run python src/tools_human_with_gradio.py
+
 mlflow_trace:
 	uv run python -i -m src.mlflow_trace
 
