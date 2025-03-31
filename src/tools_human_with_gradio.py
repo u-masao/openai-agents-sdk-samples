@@ -1,10 +1,9 @@
 import asyncio
 import functools
 from dataclasses import dataclass, field
-from typing import Any, Literal, Optional
+from typing import Any, Dict, Literal, Optional
 
 import gradio as gr
-import mlflow
 from agents import (
     Agent,
     ModelSettings,
@@ -12,9 +11,6 @@ from agents import (
     Runner,
     function_tool,
 )
-
-mlflow.set_experiment("gradio")
-mlflow.openai.autolog()
 
 
 @dataclass
@@ -35,12 +31,9 @@ class HumanInteractManager:
     人間とシステムが交流するための方法と対話の状態を管理。
     """
 
-    def __init__(self) -> None:
-        self.context = HumanInteractContext()
-        self._loop: Optional[asyncio.AbstractEventLoop] = None
-
-    def set_loop(self, loop: asyncio.AbstractEventLoop) -> None:
-        self._loop = loop
+    def __init__(self, loop: asyncio.AbstractEventLoop) -> None:
+        self.context: HumanInteractContext = HumanInteractContext()
+        self._loop: Optional[asyncio.AbstractEventLoop] = loop
 
     def send_system_to_human(self, message: str) -> None:
         """システムから人間へメッセージを送る"""
@@ -108,124 +101,158 @@ async def ask_to_human(run_ctx: RunContextWrapper[Any], question: str) -> str:
     # イベントオブジェクトがセットされるまで待ち
     print("event wait")
     await interact_manager.context.event.wait()
-    # loop = asyncio.get_event_loop()
-    # loop.run_until_complete(
-    # async_wait_for_event(interact_manager.context.event)
-    # )
 
-    # 人間のメッセージを受信
+    # 人間からメッセージを受信
     print("receive message from human to system")
     response = interact_manager.receive_human_to_system()
 
-    # done
+    # 完了
     print("receive message from human to system done")
     return response
 
 
-# Human Input のコンテキストを定義
-interact_manager = HumanInteractManager()
+class GradioUserInterface:
+    """Gradio UI の定義"""
 
-# Gradio の UI を定義
-with gr.Blocks() as demo:
-    output_text = gr.Textbox(label="システム -> 人間")
-    input_text = gr.Textbox(label="人間 -> システム")
-    submit_button = gr.Button("送信")
-    status_text = gr.Textbox(label="コンテキストのステイタス")
+    def __init__(self):
 
-    async def check_interact_update():
-        """
-        context の更新を確認
-        """
-        if interact_manager.context.status == "waiting_for_human":
-            return (
-                gr.Textbox(
-                    value=interact_manager.context.system_to_human_message,
-                    interactive=False,
-                ),
-                gr.Textbox(
-                    interactive=True, placeholder="回答を入力してください"
-                ),
-                gr.Button(interactive=True),
-                gr.Textbox(
-                    value=interact_manager.context.status,
-                    interactive=False,
-                ),
-            )
-        else:
-            return (
-                gr.Textbox(value="", interactive=False),
-                gr.Textbox(interactive=False, value=""),
-                gr.Button(interactive=False),
-                gr.Textbox(
-                    value=interact_manager.context.status,
-                    interactive=False,
-                ),
-            )
+        # カレントスレッドを取得(コンストラクタに移動できない？)
+        self.loop = asyncio.get_running_loop()
 
-    async def submit_message(human_to_system_message: str):
+        # Human Input のコンテキストを定義
+        self.interact_manager = HumanInteractManager(self.loop)
+
+    def set_components(self) -> gr.Blocks:
         """
-        Human Input を System へ送信
+        Gradio UI の定義とコールバックの設定
         """
 
-        if interact_manager.context.status == "waiting_for_human":
-            interact_manager.send_human_to_system(human_to_system_message)
+        async def check_interact_update():
+            """
+            context の更新を確認
+            """
+            ctx: HumanInteractContext = self.interact_manager.context
+            if ctx.status == "waiting_for_human":
+                return (
+                    gr.Textbox(
+                        value=ctx.system_to_human_message,
+                        interactive=False,
+                    ),
+                    gr.Textbox(
+                        interactive=True,
+                        placeholder="回答を入力してください",
+                    ),
+                    gr.Button(interactive=True),
+                    gr.Textbox(
+                        value=ctx.status,
+                        interactive=False,
+                    ),
+                )
+            else:
+                return (
+                    gr.Textbox(
+                        value=ctx.system_to_human_message,
+                        interactive=False,
+                    ),
+                    gr.Textbox(
+                        interactive=False,
+                        value=ctx.human_to_system_message,
+                    ),
+                    gr.Button(interactive=False),
+                    gr.Textbox(
+                        value=ctx.status,
+                        interactive=False,
+                    ),
+                )
 
-            return (
-                gr.Textbox(
-                    value=interact_manager.context.system_to_human_message,
-                    interactive=False,
-                ),
-                gr.Textbox(
-                    value=interact_manager.context.human_to_system_message,
-                    interactive=False,
-                ),
-                gr.Button(interactive=False),
-                gr.Textbox(
-                    value=interact_manager.context.status,
-                    interactive=False,
-                ),
+        async def submit_message(human_to_system_message: str):
+            """
+            Human Input を System へ送信
+            """
+
+            ctx: HumanInteractContext = self.interact_manager.context
+
+            if ctx.status == "waiting_for_human":
+                self.interact_manager.send_human_to_system(
+                    human_to_system_message
+                )
+
+                return (
+                    gr.Textbox(
+                        value=ctx.system_to_human_message,
+                        interactive=False,
+                    ),
+                    gr.Textbox(
+                        value=ctx.human_to_system_message,
+                        interactive=False,
+                    ),
+                    gr.Button(interactive=False),
+                    gr.Textbox(
+                        value=ctx.status,
+                        interactive=False,
+                    ),
+                )
+            else:
+                return (
+                    gr.Textbox(
+                        value=ctx.system_to_human_message,
+                        interactive=False,
+                    ),
+                    gr.Textbox(
+                        interactive=False,
+                        value=ctx.human_to_system_message,
+                    ),
+                    gr.Button(interactive=False),
+                    gr.Textbox(
+                        value=ctx.status,
+                        interactive=False,
+                    ),
+                )
+
+        # Gradio の UI を定義
+        with gr.Blocks() as demo:
+            output_text = gr.Textbox(label="システム -> 人間")
+            input_text = gr.Textbox(label="人間 -> システム")
+            submit_button = gr.Button("送信")
+            status_text = gr.Textbox(label="コンテキストのステイタス")
+            timer = gr.Timer(value=1)
+
+            timer.tick(
+                fn=check_interact_update,
+                inputs=[],
+                outputs=[output_text, input_text, submit_button, status_text],
             )
-        else:
-            return (
-                gr.Textbox(value="", interactive=False),
-                gr.Textbox(value="", interactive=False),
-                gr.Button(interactive=False),
-                gr.Textbox(
-                    value=interact_manager.context.status,
-                    interactive=False,
-                ),
+
+            submit_button.click(
+                submit_message,
+                inputs=[input_text],
+                outputs=[output_text, input_text, submit_button, status_text],
             )
 
-    timer = gr.Timer(value=1)
+        return demo
 
-    timer.tick(
-        fn=check_interact_update,
-        inputs=[],
-        outputs=[output_text, input_text, submit_button, status_text],
-    )
+    def run_background(
+        self, launch_config: Dict[str, Any] = {"share": False}
+    ) -> None:
+        """Gradio バックエンドを起動"""
 
-    submit_button.click(
-        submit_message,
-        inputs=[input_text],
-        outputs=[output_text, input_text, submit_button, status_text],
-    )
+        # Gradio コンポーネントを配置
+        demo = self.set_components()
+
+        # Gradio をバックグラウンドで起動
+        self.loop.run_in_executor(
+            None, functools.partial(demo.launch, launch_config)
+        )
 
 
 async def main():
 
-    # グローバル変数を参照(要改善)
-    global interact_manager
+    # Gradio Components を配置
+    gradio_user_interface = GradioUserInterface()
 
     # Gradio をバックグラウンドで実行
     print("run gradio background")
-    loop = asyncio.get_running_loop()
-    interact_manager.set_loop(loop)
-
-    # Gradio の起動関数をおまとめ
-    launch_func = functools.partial(demo.launch, share=False)
-    loop.run_in_executor(None, launch_func)
-
-    await asyncio.sleep(2)
+    gradio_user_interface.run_background()
 
     # エージェントを定義
     print("create agent")
@@ -240,6 +267,7 @@ async def main():
 
     # 人間へ問い合わせるエージェントを実行
     print("run agent")
+    interact_manager = gradio_user_interface.interact_manager
     result = await Runner.run(
         human_agent,
         input="今の東京の天気を言いやがれ？",
@@ -247,8 +275,9 @@ async def main():
     )
 
     # 結果を確認
-    print(f"人間の応答: {result.final_output}")
+    print(f"観測された人間の応答: {result.final_output}")
     print(f"交流のコンテキスト: {interact_manager.context}")
+    print("処理終了ですが Ctrl-C で抜けてください")
 
 
 if __name__ == "__main__":
