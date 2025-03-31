@@ -12,6 +12,8 @@ from agents import (
     function_tool,
 )
 
+HUMAN_INPUT_TIMEOUT = 300
+
 
 @dataclass
 class HumanInteractContext:
@@ -56,6 +58,13 @@ class HumanInteractManager:
         return self.context.human_to_system_message
 
 
+class HumanToSystemTimeoutException(Exception):
+    """人間の入力がタイムアウトした場合に raise される例外"""
+
+    def __init__(self, message: str = ""):
+        super().__init__(message)
+
+
 @function_tool
 async def ask_to_human(run_ctx: RunContextWrapper[Any], question: str) -> str:
     """システムから人間へ問い合わせを行い結果を取得する関数
@@ -66,9 +75,19 @@ async def ask_to_human(run_ctx: RunContextWrapper[Any], question: str) -> str:
     interact_manager: HumanInteractManager = run_ctx.context
     interact_manager.context.event.clear()
     interact_manager.send_system_to_human(f"あなたに質問です。\n{question}")
-    # 人間の入力を無限に待つ状態。タイムアウトを作るのもアリ
-    await interact_manager.context.event.wait()
-    return interact_manager.receive_human_to_system()
+    try:
+        await asyncio.wait_for(
+            interact_manager.context.event.wait(), timeout=HUMAN_INPUT_TIMEOUT
+        )
+        response = interact_manager.receive_human_to_system()
+    except asyncio.TimeoutError:
+        print(
+            "人間からの応答がありませんでした: Timeout "
+            f"{HUMAN_INPUT_TIMEOUT} 秒"
+        )
+        response = ""
+        raise HumanToSystemTimeoutException("人間から応答がありませんでした")
+    return response
 
 
 class GradioUserInterface:
@@ -164,13 +183,15 @@ class GradioUserInterface:
 
 
 async def main():
-
     # Gradio Components を配置
     gradio_user_interface = GradioUserInterface()
 
     # Gradio をバックグラウンドで実行
     print("run gradio background")
     gradio_user_interface.run_background()
+
+    # Gradio の起動待ちで軽くスリープ
+    await asyncio.sleep(3)
 
     # エージェントを定義
     print("create agent")
