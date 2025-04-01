@@ -55,7 +55,13 @@ class HumanInteractManager:
 
     def receive_human_to_system(self) -> str:
         """人間からシステムへのメッセージを受けとる"""
-        return self.context.human_to_system_message
+        message = self.context.human_to_system_message
+        self.set_status_idle()
+        return message
+
+    def set_status_idle(self) -> None:
+        """会話のステイタスを idle に変更する"""
+        self.context.status = "idle"
 
 
 class HumanToSystemTimeoutException(Exception):
@@ -82,11 +88,12 @@ async def ask_to_human(run_ctx: RunContextWrapper[Any], question: str) -> str:
         response = interact_manager.receive_human_to_system()
     except asyncio.TimeoutError:
         print(
-            "人間からの応答がありませんでした: Timeout "
+            "人間の応答がありませんでした: Timeout "
             f"{HUMAN_INPUT_TIMEOUT} 秒"
         )
-        response = ""
-        raise HumanToSystemTimeoutException("人間から応答がありませんでした")
+        interact_manager.set_status_idle()
+        # funcion_tool は例外を吸収するようので適当な例外を飛ばす
+        raise HumanToSystemTimeoutException("人間の応答がありませんでした")
     return response
 
 
@@ -94,7 +101,7 @@ class GradioUserInterface:
     """Gradio UI の定義"""
 
     def __init__(self):
-        # カレントスレッドを取得(コンストラクタに移動できない？)
+        # カレントスレッドを取得
         self.loop = asyncio.get_running_loop()
 
         # Human Input のコンテキストを定義
@@ -187,14 +194,12 @@ async def main():
     gradio_user_interface = GradioUserInterface()
 
     # Gradio をバックグラウンドで実行
-    print("run gradio background")
     gradio_user_interface.run_background()
 
-    # Gradio の起動待ちで軽くスリープ
+    # Gradio の起動待ちで軽くスリープ(簡易的な実装)
     await asyncio.sleep(3)
 
     # エージェントを定義
-    print("create agent")
     human_agent = Agent(
         name="人間に質問するエージェント",
         instructions="人間に質問の見解を問います。"
@@ -205,7 +210,6 @@ async def main():
     )
 
     # 人間へ問い合わせるエージェントを実行
-    print("run agent")
     interact_manager = gradio_user_interface.interact_manager
     result = await Runner.run(
         human_agent,
@@ -213,10 +217,10 @@ async def main():
         context=interact_manager,
     )
 
-    # 結果を確認
+    # 結果を表示
     print(f"観測された人間の応答: {result.final_output}")
-    print(f"交流のコンテキスト: \n{interact_manager.context}")
-    print("処理終了ですが Ctrl-C で抜けてください")
+    print(f"交流のコンテキスト: {interact_manager.context}")
+    print("処理終了です。Ctrl-C で抜けてください")
 
 
 if __name__ == "__main__":
