@@ -2,6 +2,12 @@ include .env
 export OPENAI_API_KEY := $(OPENAI_API_KEY)
 export OPENAI_AGENTS_DISABLE_TRACING := $(OPENAI_AGENTS_DISABLE_TRACING)
 
+mcp_filesystem:
+	uv run python src/mcp_filesystem.py
+
+visualize:
+	uv run python src/visualize.py
+
 tools_human_stdio:
 	uv run python src/tools_human_with_stdio.py
 
