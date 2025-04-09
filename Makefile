@@ -5,8 +5,11 @@ export OPENAI_AGENTS_DISABLE_TRACING := $(OPENAI_AGENTS_DISABLE_TRACING)
 mcp_filesystem:
 	uv run python src/mcp_filesystem.py
 
+chatbot_gradio:
+	uv run python src/chatbot_gradio.py
+
 visualize:
-	uv run python src/visualize.py
+	uv run gradio src/visualize.py
 
 tools_human_stdio:
 	uv run python src/tools_human_with_stdio.py
