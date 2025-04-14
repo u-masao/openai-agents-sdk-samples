@@ -2,8 +2,14 @@ include .env
 export OPENAI_API_KEY := $(OPENAI_API_KEY)
 export OPENAI_AGENTS_DISABLE_TRACING := $(OPENAI_AGENTS_DISABLE_TRACING)
 
+mcp_elasticsearch:
+	uv run python src/mcp_elasticsearch.py
+
 mcp_filesystem:
 	uv run python src/mcp_filesystem.py
+
+chatbot_gradio_queue:
+	uv run gradio src/chatbot_gradio_queue.py
 
 chatbot_gradio:
 	uv run python src/chatbot_gradio.py
