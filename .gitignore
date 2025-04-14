@@ -12,3 +12,4 @@ wheels/
 *.sw[po]
 /mlruns/
 /.gradio/
+/certs/
