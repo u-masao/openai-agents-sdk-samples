@@ -2,6 +2,12 @@ include .env
 export OPENAI_API_KEY := $(OPENAI_API_KEY)
 export OPENAI_AGENTS_DISABLE_TRACING := $(OPENAI_AGENTS_DISABLE_TRACING)
 
+voice_chat:
+	uv run gradio src/voice_chat.py
+
+gradio_audio_io:
+	uv run gradio src/gradio_audio_io.py
+
 mcp_elasticsearch:
 	uv run python src/mcp_elasticsearch.py
 
