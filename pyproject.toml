@@ -5,14 +5,15 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
-    "gradio>=5.23.1",
+    "gradio>=5.26.0",
     "mlflow>=2.21.0",
     "numpy>=2.2.4",
-    "openai-agents[viz,voice]>=0.0.6",
+    "openai-agents>=0.0.13",
     "playwright>=1.51.0",
     "python-dotenv>=1.0.1",
     "rich>=13.9.4",
     "sounddevice>=0.5.1",
+    "soundfile>=0.13.1",
 ]
 
 [dependency-groups]
